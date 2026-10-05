@@ -121,10 +121,45 @@ router.get('/categories', requireAuth, async (_req, res) => {
 });
 
 router.get('/resources', requireAuth, async (req, res) => {
+  // Everything from the URL is untrusted: check types and trim lengths.
+  const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 200) : '';
+  const category = typeof req.query.category === 'string' ? req.query.category : '';
+  const onboardingOnly = req.query.onboarding === 'true';
+  const sort = req.query.sort === 'recent' ? 'recent' : 'best';
+
+  const params = [req.user.id]; // $1 is always the current user
+  const where = [];
+  let rank = null;
+
+  if (q) {
+    params.push(q);
+    const tsquery = `websearch_to_tsquery('english', $${params.length})`;
+    where.push(`r.search @@ ${tsquery}`);
+    rank = `ts_rank(r.search, ${tsquery})`;
+  }
+  if (category) {
+    params.push(category);
+    where.push(`c.name = $${params.length}`);
+  }
+  if (onboardingOnly) {
+    where.push('r.is_onboarding = true');
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+  let orderSql;
+  if (sort === 'recent') {
+    orderSql = 'ORDER BY r.created_at DESC';
+  } else if (rank) {
+    orderSql = `ORDER BY ${rank} DESC, votes DESC, r.created_at DESC`;
+  } else {
+    orderSql = 'ORDER BY votes DESC, r.created_at DESC';
+  }
+
   try {
     const { rows } = await query(
-      `${RESOURCE_SELECT} ${RESOURCE_GROUP} ORDER BY r.created_at DESC`,
-      [req.user.id]
+      `${RESOURCE_SELECT} ${whereSql} ${RESOURCE_GROUP} ${orderSql}`,
+      params
     );
     res.json({ resources: rows });
   } catch (err) {
