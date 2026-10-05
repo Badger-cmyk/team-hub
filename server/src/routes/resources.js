@@ -4,12 +4,15 @@ import { requireAuth } from '../auth.js';
 
 const router = Router();
 
+// $1 is always the current user's id, so each row can say whether *you* voted.
 const RESOURCE_SELECT = `
   SELECT r.id, r.title, r.url, r.description, r.is_onboarding,
          r.created_at, r.created_by,
          c.name AS category,
          u.name AS contributor,
-         COALESCE(array_agg(t.name ORDER BY t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
+         COALESCE(array_agg(t.name ORDER BY t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags,
+         (SELECT COUNT(*)::int FROM votes v WHERE v.resource_id = r.id) AS votes,
+         EXISTS (SELECT 1 FROM votes v WHERE v.resource_id = r.id AND v.user_id = $1) AS voted
   FROM resources r
   JOIN categories c ON c.id = r.category_id
   JOIN users u ON u.id = r.created_by
@@ -83,8 +86,8 @@ async function saveTags(client, resourceId, tags) {
   }
 }
 
-async function getResource(id) {
-  const { rows } = await query(`${RESOURCE_SELECT} WHERE r.id = $1 ${RESOURCE_GROUP}`, [id]);
+async function getResource(id, userId) {
+  const { rows } = await query(`${RESOURCE_SELECT} WHERE r.id = $2 ${RESOURCE_GROUP}`, [userId, id]);
   return rows[0];
 }
 
@@ -117,9 +120,12 @@ router.get('/categories', requireAuth, async (_req, res) => {
   }
 });
 
-router.get('/resources', requireAuth, async (_req, res) => {
+router.get('/resources', requireAuth, async (req, res) => {
   try {
-    const { rows } = await query(`${RESOURCE_SELECT} ${RESOURCE_GROUP} ORDER BY r.created_at DESC`);
+    const { rows } = await query(
+      `${RESOURCE_SELECT} ${RESOURCE_GROUP} ORDER BY r.created_at DESC`,
+      [req.user.id]
+    );
     res.json({ resources: rows });
   } catch (err) {
     serverError(res, err);
@@ -148,7 +154,7 @@ router.post('/resources', requireAuth, async (req, res) => {
     await saveTags(client, resourceId, values.tags);
     await client.query('COMMIT');
 
-    res.status(201).json({ resource: await getResource(resourceId) });
+    res.status(201).json({ resource: await getResource(resourceId, req.user.id) });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     serverError(res, err);
@@ -184,7 +190,7 @@ router.put('/resources/:id', requireAuth, requireOwnerOrAdmin, async (req, res) 
     await saveTags(client, req.params.id, values.tags);
     await client.query('COMMIT');
 
-    res.json({ resource: await getResource(req.params.id) });
+    res.json({ resource: await getResource(req.params.id, req.user.id) });
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});
     serverError(res, err);
@@ -198,6 +204,37 @@ router.delete('/resources/:id', requireAuth, requireOwnerOrAdmin, async (req, re
     await query('DELETE FROM resources WHERE id = $1', [req.params.id]);
     res.status(204).end();
   } catch (err) {
+    serverError(res, err);
+  }
+});
+
+// Toggle: first call adds your vote, second call removes it.
+router.post('/resources/:id/vote', requireAuth, async (req, res) => {
+  const resourceId = req.params.id;
+  if (!/^\d+$/.test(resourceId)) {
+    return res.status(404).json({ error: 'Resource not found.' });
+  }
+  try {
+    // The primary key makes a duplicate vote impossible, so we try to insert first.
+    const inserted = await query(
+      'INSERT INTO votes (user_id, resource_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+      [req.user.id, resourceId]
+    );
+    const voted = inserted.rowCount === 1;
+    if (!voted) {
+      // The vote already existed, so this click removes it.
+      await query('DELETE FROM votes WHERE user_id = $1 AND resource_id = $2', [req.user.id, resourceId]);
+    }
+    const { rows } = await query(
+      'SELECT COUNT(*)::int AS votes FROM votes WHERE resource_id = $1',
+      [resourceId]
+    );
+    res.json({ voted, votes: rows[0].votes });
+  } catch (err) {
+    // 23503 = foreign key violation: that resource doesn't exist.
+    if (err.code === '23503') {
+      return res.status(404).json({ error: 'Resource not found.' });
+    }
     serverError(res, err);
   }
 });
