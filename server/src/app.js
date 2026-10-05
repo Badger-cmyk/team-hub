@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { query } from './db.js';
 
 export function createApp() {
   const app = express();
@@ -8,6 +9,16 @@ export function createApp() {
   app.use(express.json({ limit: '100kb' }));
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+  app.get('/api/health/db', async (_req, res) => {
+  try {
+    await query('SELECT now() AS time');
+    res.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ ok: false });
+  }
+});
 
   return app;
 }
