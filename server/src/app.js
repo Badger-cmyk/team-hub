@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { query } from './db.js';
 import authRoutes from './routes/auth.js';
+import resourceRoutes from './routes/resources.js';
 
 export function createApp() {
   const app = express();
@@ -22,6 +23,8 @@ export function createApp() {
 });
 
 app.use('/api/auth', authRoutes);
+
+app.use('/api', resourceRoutes);
 
   return app;
 }
