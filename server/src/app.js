@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { query } from './db.js';
+import authRoutes from './routes/auth.js';
 
 export function createApp() {
   const app = express();
@@ -19,6 +20,8 @@ export function createApp() {
     res.status(500).json({ ok: false });
   }
 });
+
+app.use('/api/auth', authRoutes);
 
   return app;
 }
