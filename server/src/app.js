@@ -4,6 +4,7 @@ import { query } from './db.js';
 import authRoutes from './routes/auth.js';
 import resourceRoutes from './routes/resources.js';
 import onboardingRoutes from './routes/onboarding.js';
+import inviteRoutes from './routes/invites.js';
 
 export function createApp() {
   const app = express();
@@ -28,6 +29,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api', resourceRoutes);
 
 app.use('/api/onboarding', onboardingRoutes);
+
+app.use('/api/invites', inviteRoutes);
 
   return app;
 }
