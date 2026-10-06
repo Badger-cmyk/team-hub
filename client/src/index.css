@@ -145,3 +145,53 @@ select[aria-invalid='true'] {
   text-decoration: underline;
   cursor: pointer;
 }
+
+/* Skip link: hidden until a keyboard user tabs to it */
+.skip {
+  position: absolute;
+  left: 0.5rem;
+  top: -4rem;
+  background: var(--accent);
+  color: var(--on-accent);
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  z-index: 10;
+}
+.skip:focus { top: 0.5rem; }
+
+/* The skip link moves focus to <main>; don't draw a ring around the whole page for that. */
+[tabindex='-1']:focus { outline: none; }
+
+/* Top bar */
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--line);
+}
+.brand { font-weight: 600; margin: 0; }
+.who { display: flex; align-items: center; gap: 0.75rem; color: var(--muted); font-size: 0.9rem; }
+
+/* Cards and list */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; }
+.list { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 0.75rem; }
+.card h2 { font-size: 1.1rem; }
+.card h2 a { color: var(--accent); overflow-wrap: anywhere; }
+.desc { color: var(--text); }
+.byline { color: var(--muted); font-size: 0.85rem; margin: 0.4rem 0 0; }
+.meta { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.4rem 0; padding: 0; }
+.pill {
+  font-size: 0.85rem;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--control-line);
+  border-radius: 999px;
+  color: var(--text);
+}
+/* Dashed border and bold text, so "Onboarding" isn't shown by colour alone */
+.pill.onboarding { border-style: dashed; border-width: 2px; font-weight: 600; }
+.pill.tag { color: var(--muted); }
+
+.center, .empty { text-align: center; padding: 2rem 1rem; color: var(--muted); }

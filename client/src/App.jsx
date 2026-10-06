@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, setToken, hasToken, setUnauthorizedHandler } from './api.js';
 import AuthForm from './components/AuthForm.jsx';
+import Hub from './components/Hub.jsx';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -33,15 +34,5 @@ export default function App() {
   if (!user) return <AuthForm onAuth={setUser} />;
 
   // Temporary: the resource list replaces this in the next step.
-  return (
-    <main>
-      <h1>Team hub</h1>
-      <p>
-        Signed in as {user.name} ({user.role}).
-      </p>
-      <button type="button" className="btn" onClick={signOut}>
-        Sign out
-      </button>
-    </main>
-  );
+  return <Hub user={user} onSignOut={signOut} />
 }
