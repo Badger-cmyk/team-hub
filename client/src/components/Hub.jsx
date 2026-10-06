@@ -8,6 +8,9 @@ export default function Hub({ user, onSignOut }) {
   const [result, setResult] = useState({ key: null, resources: [], error: '' });
   // Bumping this re-runs the request ("Try again", and later after adding a resource).
   const [attempt, setAttempt] = useState(0);
+  // A message about the last action (such as a vote), tied to the request it happened under.
+  const [notice, setNotice] = useState(null);
+  const voting = useRef(new Set());
 
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -69,11 +72,41 @@ export default function Hub({ user, onSignOut }) {
     searchRef.current?.focus();
   }
 
+  async function handleVote(r) {
+    if (voting.current.has(r.id)) return; // ignore a second click while one is in flight
+    voting.current.add(r.id);
+    try {
+      const { voted, votes } = await api.vote(r.id);
+      // Update this one card in place. The list is not re-sorted, so nothing jumps under the cursor.
+      setResult((cur) => ({
+        ...cur,
+        resources: cur.resources.map((x) => (x.id === r.id ? { ...x, voted, votes } : x)),
+      }));
+      const count = `${votes} ${votes === 1 ? 'vote' : 'votes'}`;
+      setNotice({
+        key: requestKey,
+        text: voted ? `Upvoted ${r.title}. ${count}.` : `Removed your upvote from ${r.title}. ${count}.`,
+      });
+    } catch (err) {
+      setNotice({
+        key: requestKey,
+        isError: true,
+        text: err instanceof ApiError ? err.message : 'Could not save your vote. Try again.',
+      });
+    } finally {
+      voting.current.delete(r.id);
+    }
+  }
+
+  // A notice only applies while the same search is on screen.
+  const activeNotice = notice && notice.key === requestKey ? notice : null;
+
   // Read out by screen readers when results change, without moving focus.
-  const announcement =
+  const countText =
     loading || loadError
       ? ''
       : `${resources.length} ${resources.length === 1 ? 'resource' : 'resources'} found`;
+  const liveText = activeNotice && !activeNotice.isError ? activeNotice.text : countText;
 
   return (
     <>
@@ -151,8 +184,14 @@ export default function Hub({ user, onSignOut }) {
         </section>
 
         <div className="sr-only" role="status" aria-live="polite">
-          {announcement}
+          {liveText}
         </div>
+
+        {activeNotice?.isError && (
+          <div className="error-summary" role="alert">
+            {activeNotice.text}
+          </div>
+        )}
 
         {showLoadingText ? (
           <p className="center">Loading resources…</p>
@@ -168,7 +207,7 @@ export default function Hub({ user, onSignOut }) {
             <h2>{filtersActive ? 'No resources match' : 'Start the library'}</h2>
             <p>
               {filtersActive
-                ? 'Try different words or clear a filter. Search matches the beginning of words, so "dock" finds "docker".'
+                ? 'Try different words or clear a filter. Search matches the beginning of words, so "dock" finds "docker" but "ker" does not.'
                 : 'Nothing has been shared yet.'}
             </p>
             {filtersActive && (
@@ -180,7 +219,7 @@ export default function Hub({ user, onSignOut }) {
         ) : (
           <ul className="list" aria-label="Resources" aria-busy={loading}>
             {resources.map((r) => (
-              <ResourceCard key={r.id} resource={r} />
+              <ResourceCard key={r.id} resource={r} onVote={handleVote} />
             ))}
           </ul>
         )}

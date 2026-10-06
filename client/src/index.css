@@ -9,6 +9,7 @@
   --control-line: #6e7781;
   --accent: #0a58ca;
   --on-accent: #ffffff;
+  --accent-soft: #ddf4ff;
   --danger: #b42318;
   --focus: #0969da;
   color-scheme: light dark;
@@ -23,6 +24,7 @@
     --line: #30363d;
     --control-line: #7d8590;
     --accent: #1f6feb;
+    --accent-soft: #10243e;
     --danger: #ff7b72;
     --focus: #58a6ff;
   }
@@ -230,3 +232,31 @@ select[aria-invalid='true'] {
 .chip[aria-pressed='true']::before { content: '✓ '; }
 
 .empty .btn { margin-top: 0.5rem; }
+
+/* Resource card with vote button */
+.resource { display: flex; gap: 0.9rem; align-items: flex-start; }
+.resource-body { flex: 1; min-width: 0; }
+
+.vote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 56px;
+  padding: 0.25rem 0.5rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 2px solid var(--control-line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+/* Voted state: filled triangle, tinted background and accent border, so it's not colour alone. */
+.vote.on { background: var(--accent-soft); border-color: var(--accent); }
+
+@media (max-width: 480px) {
+  .resource { flex-direction: column; }
+  .vote { flex-direction: row; gap: 0.5rem; min-height: 44px; }
+}

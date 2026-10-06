@@ -4,12 +4,23 @@ const dateFormat = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
 });
 
-export default function ResourceCard({ resource: r }) {
+export default function ResourceCard({ resource: r, onVote }) {
   const headingId = `res-${r.id}-title`;
 
   return (
-    <li className="card">
-      <article aria-labelledby={headingId}>
+    <li className="card resource">
+      <button
+        type="button"
+        className={`vote${r.voted ? ' on' : ''}`}
+        aria-pressed={r.voted}
+        aria-label={`Upvote ${r.title}. ${r.votes} ${r.votes === 1 ? 'vote' : 'votes'}`}
+        onClick={() => onVote(r)}
+      >
+        <span aria-hidden="true">{r.voted ? '▲' : '△'}</span>
+        <span aria-hidden="true">{r.votes}</span>
+      </button>
+
+      <article aria-labelledby={headingId} className="resource-body">
         <h2 id={headingId}>
           <a href={r.url} target="_blank" rel="noopener noreferrer">
             {r.title}
@@ -27,9 +38,6 @@ export default function ResourceCard({ resource: r }) {
               {t}
             </li>
           ))}
-          <li className="pill">
-            {r.votes} {r.votes === 1 ? 'upvote' : 'upvotes'}
-          </li>
         </ul>
 
         <p className="byline">
