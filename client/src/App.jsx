@@ -3,6 +3,7 @@ import { Link, Route, Routes } from 'react-router-dom';
 import { api, setToken, hasToken, setUnauthorizedHandler } from './api.js';
 import AuthForm from './components/AuthForm.jsx';
 import Hub from './components/Hub.jsx';
+import Invites from './components/Invites.jsx';
 import Layout from './components/Layout.jsx';
 import Onboarding from './components/Onboarding.jsx';
 
@@ -15,6 +16,20 @@ function NotFound() {
       <h1>Page not found</h1>
       <p>
         That page does not exist. <Link to="/">Go to the resources</Link>.
+      </p>
+    </>
+  );
+}
+
+function NoAccess() {
+  useEffect(() => {
+    document.title = 'No access – Team hub';
+  }, []);
+  return (
+    <>
+      <h1>No access</h1>
+      <p>
+        Only admins can use this page. <Link to="/">Go to the resources</Link>.
       </p>
     </>
   );
@@ -57,6 +72,7 @@ export default function App() {
       <Route element={<Layout user={user} onSignOut={signOut} />}>
         <Route index element={<Hub user={user} />} />
         <Route path="onboarding" element={<Onboarding />} />
+        <Route path="invites" element={user.role === 'admin' ? <Invites /> : <NoAccess />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

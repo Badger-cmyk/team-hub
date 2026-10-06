@@ -80,4 +80,7 @@ export const api = {
   vote: (id) => request(`/resources/${id}/vote`, { method: 'POST' }),
   onboarding: (signal) => request(`/onboarding`, { signal }),   
   setOnboardingDone: (id, done) => request(`/onboarding/${id}`, { method: 'PUT', body: { done } }),
+  createInvite: (email) => request('/invites', { method: 'POST', body: { email } }),
+  listInvites: (signal) => request('/invites', { signal }),
+  revokeInvite: (id) => request(`/invites/${id}`, { method: 'DELETE' }),
 };

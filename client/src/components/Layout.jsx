@@ -34,6 +34,11 @@ export default function Layout({ user, onSignOut }) {
             <li>
               <NavLink to="/onboarding">Onboarding path</NavLink>
             </li>
+            {user.role === 'admin' && (
+                <li>
+                    <NavLink to="/invites">Invite People</NavLink>
+                </li>
+            )}
           </ul>
         </nav>
 
