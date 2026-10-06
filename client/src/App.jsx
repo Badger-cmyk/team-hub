@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, Route, Routes } from 'react-router-dom';
 import { api, setToken, hasToken, setUnauthorizedHandler } from './api.js';
 import AuthForm from './components/AuthForm.jsx';
 import Hub from './components/Hub.jsx';
+import Layout from './components/Layout.jsx';
+import Onboarding from './components/Onboarding.jsx';
+
+function NotFound() {
+  useEffect(() => {
+    document.title = 'Page not found – Team hub';
+  }, []);
+  return (
+    <>
+      <h1>Page not found</h1>
+      <p>
+        That page does not exist. <Link to="/">Go to the resources</Link>.
+      </p>
+    </>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -19,7 +36,9 @@ export default function App() {
     api
       .me()
       .then((d) => setUser(d.user))
-      .catch(() => setToken(null))
+      // A 401 is handled by the handler above, which clears the token.
+      // Other failures (server down) keep the token so a later refresh still works.
+      .catch(() => {})
       .finally(() => setBooting(false));
   }, [signOut]);
 
@@ -33,6 +52,13 @@ export default function App() {
 
   if (!user) return <AuthForm onAuth={setUser} />;
 
-  // Temporary: the resource list replaces this in the next step.
-  return <Hub user={user} onSignOut={signOut} />
+  return (
+    <Routes>
+      <Route element={<Layout user={user} onSignOut={signOut} />}>
+        <Route index element={<Hub user={user} />} />
+        <Route path="onboarding" element={<Onboarding />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+    </Routes>
+  );
 }

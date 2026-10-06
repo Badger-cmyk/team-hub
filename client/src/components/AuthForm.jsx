@@ -13,6 +13,10 @@ export default function AuthForm({ onAuth }) {
   const isRegister = mode === 'register';
   const set = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }));
 
+  useEffect(() => {
+    document.title = 'Sign in – Team hub';
+  }, []);
+
   // When an error appears, move focus to it so keyboard and screen reader users notice.
   useEffect(() => {
     if (error) errorRef.current?.focus();

@@ -3,7 +3,7 @@ import { api, ApiError } from '../api.js';
 import ResourceCard from './ResourceCard.jsx';
 import ResourceForm from './ResourceForm.jsx';
 
-export default function Hub({ user, onSignOut }) {
+export default function Hub({ user }) {
   const [categories, setCategories] = useState([]);
   // The latest answer from the server, tagged with the request it belongs to.
   const [result, setResult] = useState({ key: null, resources: [], error: '' });
@@ -26,6 +26,10 @@ export default function Hub({ user, onSignOut }) {
   const headingRef = useRef(null);
   const addButtonRef = useRef(null);
   const openerRef = useRef(null); // the button that opened the form, so focus can go back to it
+
+  useEffect(() => {
+    document.title = 'Resources – Team hub';
+  }, []);
 
   useEffect(() => {
     api
@@ -165,155 +169,139 @@ export default function Hub({ user, onSignOut }) {
 
   return (
     <>
-      <a className="skip" href="#main">
-        Skip to main content
-      </a>
+      <div className="titlebar">
+        <h1 tabIndex={-1} ref={headingRef}>
+          Resources
+        </h1>
+        <button
+          type="button"
+          className="btn primary"
+          ref={addButtonRef}
+          onClick={(e) => openForm(null, e.currentTarget)}
+        >
+          Add resource
+        </button>
+      </div>
 
-      <header className="topbar">
-        <p className="brand">Team hub</p>
-        <div className="who">
-          <span>Signed in as {user.name}</span>
-          <button type="button" className="btn" onClick={onSignOut}>
-            Sign out
-          </button>
+      {formOpen && (
+        <ResourceForm
+          key={editing ? editing.id : 'new'}
+          categories={categories}
+          initial={editing}
+          isAdmin={user.role === 'admin'}
+          onSaved={handleSaved}
+          onCancel={closeForm}
+        />
+      )}
+
+      <section aria-label="Search and filters" className="filters">
+        <div className="field">
+          <label htmlFor="search">Search resources</label>
+          <input
+            id="search"
+            ref={searchRef}
+            type="search"
+            value={search}
+            placeholder="For example: git branching"
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-      </header>
 
-      <main id="main" tabIndex={-1}>
-        <div className="titlebar">
-          <h1 tabIndex={-1} ref={headingRef}>
-            Resources
-          </h1>
+        <fieldset className="chips">
+          <legend>Category</legend>
           <button
             type="button"
-            className="btn primary"
-            ref={addButtonRef}
-            onClick={(e) => openForm(null, e.currentTarget)}
+            className="chip"
+            aria-pressed={category === ''}
+            onClick={() => setCategory('')}
           >
-            Add resource
+            All
           </button>
-        </div>
-
-        {formOpen && (
-          <ResourceForm
-            key={editing ? editing.id : 'new'}
-            categories={categories}
-            initial={editing}
-            isAdmin={user.role === 'admin'}
-            onSaved={handleSaved}
-            onCancel={closeForm}
-          />
-        )}
-
-        <section aria-label="Search and filters" className="filters">
-          <div className="field">
-            <label htmlFor="search">Search resources</label>
-            <input
-              id="search"
-              ref={searchRef}
-              type="search"
-              value={search}
-              placeholder="For example: git branching"
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          <fieldset className="chips">
-            <legend>Category</legend>
+          {categories.map((c) => (
             <button
+              key={c}
               type="button"
               className="chip"
-              aria-pressed={category === ''}
-              onClick={() => setCategory('')}
+              aria-pressed={category === c}
+              onClick={() => setCategory(category === c ? '' : c)}
             >
-              All
+              {c}
             </button>
-            {categories.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className="chip"
-                aria-pressed={category === c}
-                onClick={() => setCategory(category === c ? '' : c)}
-              >
-                {c}
-              </button>
-            ))}
-          </fieldset>
+          ))}
+        </fieldset>
 
-          <div className="row">
-            <div className="check">
-              <input
-                id="onb-only"
-                type="checkbox"
-                checked={onboardingOnly}
-                onChange={(e) => setOnboardingOnly(e.target.checked)}
-              />
-              <label htmlFor="onb-only">Onboarding path only</label>
-            </div>
-            <div className="field inline">
-              <label htmlFor="sort">Sort by</label>
-              <select id="sort" value={sort} onChange={(e) => setSort(e.target.value)}>
-                <option value="">Best match, then most upvoted</option>
-                <option value="recent">Newest</option>
-              </select>
-            </div>
+        <div className="row">
+          <div className="check">
+            <input
+              id="onb-only"
+              type="checkbox"
+              checked={onboardingOnly}
+              onChange={(e) => setOnboardingOnly(e.target.checked)}
+            />
+            <label htmlFor="onb-only">Onboarding path only</label>
           </div>
-        </section>
-
-        <div className="sr-only" role="status" aria-live="polite">
-          {liveText}
-        </div>
-
-        {/* Visible confirmation for saved and deleted. The container stays in the page so changes are announced. */}
-        <div role="status">
-          {activeNotice?.kind === 'info' && <p className="notice">{activeNotice.text}</p>}
-        </div>
-
-        {activeNotice?.kind === 'error' && (
-          <div className="error-summary" role="alert">
-            {activeNotice.text}
+          <div className="field inline">
+            <label htmlFor="sort">Sort by</label>
+            <select id="sort" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="">Best match, then most upvoted</option>
+              <option value="recent">Newest</option>
+            </select>
           </div>
-        )}
+        </div>
+      </section>
 
-        {showLoadingText ? (
-          <p className="center">Loading resources…</p>
-        ) : loadError ? (
-          <div className="error-summary" role="alert">
-            {loadError}{' '}
-            <button type="button" className="link" onClick={reload}>
-              Try again
+      <div className="sr-only" role="status" aria-live="polite">
+        {liveText}
+      </div>
+
+      {/* Visible confirmation for saved and deleted. The container stays in the page so changes are announced. */}
+      <div role="status">
+        {activeNotice?.kind === 'info' && <p className="notice">{activeNotice.text}</p>}
+      </div>
+
+      {activeNotice?.kind === 'error' && (
+        <div className="error-summary" role="alert">
+          {activeNotice.text}
+        </div>
+      )}
+
+      {showLoadingText ? (
+        <p className="center">Loading resources…</p>
+      ) : loadError ? (
+        <div className="error-summary" role="alert">
+          {loadError}{' '}
+          <button type="button" className="link" onClick={reload}>
+            Try again
+          </button>
+        </div>
+      ) : resources.length === 0 ? (
+        <div className="empty">
+          <h2>{filtersActive ? 'No resources match' : 'Start the library'}</h2>
+          <p>
+            {filtersActive
+              ? 'Try different words or clear a filter. Search matches the beginning of words, so "dock" finds "docker" but "ker" does not.'
+              : 'Nothing has been shared yet. Add the first useful link.'}
+          </p>
+          {filtersActive && (
+            <button type="button" className="btn" onClick={clearFilters}>
+              Clear search and filters
             </button>
-          </div>
-        ) : resources.length === 0 ? (
-          <div className="empty">
-            <h2>{filtersActive ? 'No resources match' : 'Start the library'}</h2>
-            <p>
-              {filtersActive
-                ? 'Try different words or clear a filter. Search matches the beginning of words, so "dock" finds "docker" but "ker" does not.'
-                : 'Nothing has been shared yet. Add the first useful link.'}
-            </p>
-            {filtersActive && (
-              <button type="button" className="btn" onClick={clearFilters}>
-                Clear search and filters
-              </button>
-            )}
-          </div>
-        ) : (
-          <ul className="list" aria-label="Resources" aria-busy={loading}>
-            {resources.map((r) => (
-              <ResourceCard
-                key={r.id}
-                resource={r}
-                user={user}
-                onVote={handleVote}
-                onEdit={openForm}
-                onDelete={handleDelete}
-              />
-            ))}
-          </ul>
-        )}
-      </main>
+          )}
+        </div>
+      ) : (
+        <ul className="list" aria-label="Resources" aria-busy={loading}>
+          {resources.map((r) => (
+            <ResourceCard
+              key={r.id}
+              resource={r}
+              user={user}
+              onVote={handleVote}
+              onEdit={openForm}
+              onDelete={handleDelete}
+            />
+          ))}
+        </ul>
+      )}
     </>
   );
 }

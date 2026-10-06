@@ -78,4 +78,6 @@ export const api = {
   update: (id, body) => request(`/resources/${id}`, { method: 'PUT', body }),
   remove: (id) => request(`/resources/${id}`, { method: 'DELETE' }),
   vote: (id) => request(`/resources/${id}/vote`, { method: 'POST' }),
+  onboarding: (signal) => request(`/onboarding`, { signal }),   
+  setOnboardingDone: (id, done) => request(`/onboarding/${id}`, { method: 'PUT', body: { done } }),
 };
