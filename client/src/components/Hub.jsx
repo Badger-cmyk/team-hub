@@ -168,7 +168,7 @@ export default function Hub({ user, onSignOut }) {
             <h2>{filtersActive ? 'No resources match' : 'Start the library'}</h2>
             <p>
               {filtersActive
-                ? 'Try different words or clear a filter. Search matches whole words, so "docker" will not match "dock".'
+                ? 'Try different words or clear a filter. Search matches the beginning of words, so "dock" finds "docker".'
                 : 'Nothing has been shared yet.'}
             </p>
             {filtersActive && (

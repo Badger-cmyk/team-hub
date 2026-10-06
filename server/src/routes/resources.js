@@ -71,6 +71,14 @@ function parseResource(body) {
   return { values, fields };
 }
 
+// Turns typed text into a prefix search: "git bran" -> "git:* & bran:*".
+// Only letters and digits are kept, so typed symbols can never become query operators.
+function buildPrefixQuery(input) {
+  const words = input.toLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
+  if (words.length === 0) return null;
+  return words.map((w) => `${w}:*`).join(' & ');
+}
+
 async function saveTags(client, resourceId, tags) {
   for (const name of tags) {
     const tag = await client.query(
@@ -132,10 +140,15 @@ router.get('/resources', requireAuth, async (req, res) => {
   let rank = null;
 
   if (q) {
-    params.push(q);
-    const tsquery = `websearch_to_tsquery('english', $${params.length})`;
-    where.push(`r.search @@ ${tsquery}`);
-    rank = `ts_rank(r.search, ${tsquery})`;
+    const prefixQuery = buildPrefixQuery(q);
+    if (prefixQuery) {
+      params.push(prefixQuery);
+      const tsquery = `to_tsquery('english', $${params.length})`;
+      where.push(`r.search @@ ${tsquery}`);
+      rank = `ts_rank(r.search, ${tsquery})`;
+    } else {
+      where.push('false'); // nothing searchable was typed, so nothing matches
+    }
   }
   if (category) {
     params.push(category);
