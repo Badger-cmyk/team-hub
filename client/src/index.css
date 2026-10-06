@@ -341,3 +341,6 @@ progress { display: block; width: 100%; height: 1rem; margin-bottom: 1rem; accen
 .pill.status.pending { border-style: dashed; border-width: 2px; }
 .pill.status.used { border-color: var(--accent); }
 .pill.status.expired { color: var(--muted); }
+
+/* The invited email can be read and focused, but not changed. */
+input[readonly] { background: var(--surface); }

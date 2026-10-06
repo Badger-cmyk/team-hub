@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import { api, setToken, hasToken, setUnauthorizedHandler } from './api.js';
 import AuthForm from './components/AuthForm.jsx';
 import Hub from './components/Hub.jsx';
 import Invites from './components/Invites.jsx';
 import Layout from './components/Layout.jsx';
 import Onboarding from './components/Onboarding.jsx';
+import Register from './components/Register.jsx';
 
 function NotFound() {
   useEffect(() => {
@@ -65,10 +66,20 @@ export default function App() {
     );
   }
 
-  if (!user) return <AuthForm onAuth={setUser} />;
+  // Signed out: the registration page (reached from an invite link) or the sign-in form.
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="register" element={<Register onAuth={setUser} />} />
+        <Route path="*" element={<AuthForm onAuth={setUser} />} />
+      </Routes>
+    );
+  }
 
   return (
     <Routes>
+      {/* Someone who is already signed in has no use for an invite link. */}
+      <Route path="register" element={<Navigate to="/" replace />} />
       <Route element={<Layout user={user} onSignOut={signOut} />}>
         <Route index element={<Hub user={user} />} />
         <Route path="onboarding" element={<Onboarding />} />

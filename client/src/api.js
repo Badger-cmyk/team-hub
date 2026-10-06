@@ -83,4 +83,5 @@ export const api = {
   createInvite: (email) => request('/invites', { method: 'POST', body: { email } }),
   listInvites: (signal) => request('/invites', { signal }),
   revokeInvite: (id) => request(`/invites/${id}`, { method: 'DELETE' }),
+  checkInvite: (invite) => request('/auth/invite-check', { method: 'POST', body: { invite } }),
 };
