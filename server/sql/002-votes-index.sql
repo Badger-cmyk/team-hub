@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS votes_resource_id_idx ON votes (resource_id);
